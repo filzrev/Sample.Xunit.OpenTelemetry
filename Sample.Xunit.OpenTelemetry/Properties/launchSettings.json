@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Sample.Xunit.OpenTelemetry": {
+      "commandName": "Project",
+      "commandLineArgs": ""
+    }
+  }
+}
