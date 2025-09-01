@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Xunit.Sdk;
 
 namespace Sample.Xunit.OpenTelemetry
 {
@@ -21,6 +22,18 @@ namespace Sample.Xunit.OpenTelemetry
                 TestResult.NotRun => "notrun",
                 _ => null,
             };
+        }
+
+        public static string GetSimpleTestCaseDisplayName(this ITestCase testCase)
+        {
+            // TODO: DisplayName may be customized by Fact/Theory property. And might contains dot on auto generated Theory display name.
+            return testCase.TestCaseDisplayName.Split('.').Last();
+        }
+
+        public static string GetSimpleTestDisplayName(this ITest test)
+        {
+            // TODO: DisplayName may be customized by Fact/Theory property. And might contains dot on auto generated Theory display name.
+            return test.TestDisplayName.Split('.').Last();
         }
     }
 }

@@ -59,14 +59,14 @@ internal class XunitEventListener : EventListener
             case EventIds.TestStart:
                 {
                     var test = context!.Test!;
-                    var testDisplayName = test.TestDisplayName; // TODO: Gets simple display name without namespace.
-                    var activityName = $"Test({testDisplayName})";
+                    var simpleTestName = test.GetSimpleTestDisplayName();
+                    var activityName = $"TestCase({simpleTestName})";
 
                     Activity.Current = ActivitySource.StartActivity(activityName, ActivityKind.Internal, parentId: default, tags: new ActivityTagsCollection
                     {
                         ["test.case.name"] = test.TestDisplayName, // Use fully qualified display name.
                         ["xunit.test.id"] = test.UniqueID,
-                        ["xunit.test.name"] = testDisplayName,
+                        ["xunit.test.name"] = test.TestDisplayName,
                         // ["xunit.test.traits"] = test.Traits.ToArray(),
                     });
                     return;
@@ -74,12 +74,12 @@ internal class XunitEventListener : EventListener
             case EventIds.TestCaseStart:
                 {
                     var testCase = context!.TestCase!;
-                    var testCaseDisplayName = testCase.TestCaseDisplayName; // TODO: Gets simple display name without namespace.
-                    var activityName = $"TestCase({testCaseDisplayName})";
+                    var simpleTestCaseName = testCase.GetSimpleTestCaseDisplayName();
+                    var activityName = $"TestCase({simpleTestCaseName})";
                     Activity.Current = ActivitySource.StartActivity(activityName, ActivityKind.Internal, parentId: default, tags: new ActivityTagsCollection
                     {
                         ["xunit.testcase.id"] = testCase.UniqueID,
-                        ["xunit.testcase.name"] = testCaseDisplayName,
+                        ["xunit.testcase.name"] = testCase.TestCaseDisplayName,
                     });
 
                     return;
@@ -158,14 +158,26 @@ internal class XunitEventListener : EventListener
             case EventIds.TestStop:
                 {
                     var context = TestContext.Current;
-                    var testState = context.TestState;
+                    var testState = context.TestState!;
                     activity.AddTag(AttributeNames.TestCaseResultStatus, testState?.Result.ToTestCaseResultStatus());
 
                     switch (testState?.Result)
                     {
                         case TestResult.Failed:
-                            var errorMessage = ExtractErrorMessage(context.TestState!);
+                            var errorMessage = ExtractErrorMessage(testState);
                             activity.SetStatus(ActivityStatusCode.Error, description: errorMessage);
+
+                            // Semantic conventions for exceptions
+                            // https://opentelemetry.io/docs/specs/semconv/exceptions/exceptions-spans
+                            for (int i = 0; i < testState.ExceptionMessages!.Length; ++i)
+                            {
+                                activity.AddEvent(new("Exception", tags: new()
+                                {
+                                    ["exception.type"] = testState.ExceptionTypes![i],
+                                    ["exception.message"] = testState.ExceptionMessages![i],
+                                    ["exception.stacktrace"] = testState.ExceptionStackTraces![i],
+                                }));
+                            }
                             break;
                         default:
                             break;
@@ -203,7 +215,8 @@ internal class XunitEventListener : EventListener
         StringBuilder sb = new();
         sb.AppendLine($"FailureCause: {testResultState.FailureCause}");
 
-        // TODO: Handle inner exceptions.
+        // TODO: Need to handle inner exceptions? Currently extract root exception information only.
+        // And full exception information is reported as Event.
         int index = 0;
         sb.AppendLine($"{testResultState.ExceptionTypes![index]}: {testResultState.ExceptionMessages![index]}");
         sb.AppendLine("Stack Trace:");
