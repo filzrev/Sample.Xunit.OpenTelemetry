@@ -117,6 +117,9 @@ public class XUnitStartup : ITestPipelineStartup
         {
         });
 
+        // TODO: Need to propagate error when unhandled exception thrown?
+        builder.SetErrorStatusOnException();
+
         builder
             .ConfigureResource(ConfigureResourceBuilder)
             //.AddSource(Constants.XUnitActivitySourceName)

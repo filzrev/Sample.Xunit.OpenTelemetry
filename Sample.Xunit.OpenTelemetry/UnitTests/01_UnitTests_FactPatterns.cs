@@ -16,7 +16,7 @@ public class UnitTests_FactPatterns : TestBase
         await Task.Delay(100, CancellationToken);
     }
 
-    [Fact(Skip = "Skipped")]
+    [Fact(Skip = "Skip")]
     public async Task Test03()
     {
         await Task.Delay(100, CancellationToken);
@@ -24,20 +24,28 @@ public class UnitTests_FactPatterns : TestBase
 
     public static bool IsSkipped => true;
 
-    [Fact(Skip = "ConditionalSkipped", SkipWhen = nameof(IsSkipped))]
+    [Fact(Skip = "ConditionalSkip", SkipWhen = nameof(IsSkipped))]
     public async Task Test04()
     {
         await Task.Delay(100, CancellationToken);
     }
 
-    [Fact(Explicit = true)]
+    [Fact]
     public async Task Test05()
+    {
+        // Dynamic skip
+        await Task.Delay(100, CancellationToken);
+        Assert.Skip("DynamicSkip");
+    }
+
+    [Fact(Explicit = true)]
+    public async Task Test06()
     {
         await Task.Delay(100, CancellationToken);
     }
 
     [Fact(Timeout = 50)]
-    public async Task Test06()
+    public async Task Test07()
     {
         await Task.Delay(5000, CancellationToken);
     }

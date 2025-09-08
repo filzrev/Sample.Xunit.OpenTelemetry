@@ -60,7 +60,7 @@ internal class XunitEventListener : EventListener
                 {
                     var test = context!.Test!;
                     var simpleTestName = test.GetSimpleTestDisplayName();
-                    var activityName = $"TestCase({simpleTestName})";
+                    var activityName = $"Test({simpleTestName})";
 
                     Activity.Current = ActivitySource.StartActivity(activityName, ActivityKind.Internal, parentId: default, tags: new ActivityTagsCollection
                     {
@@ -163,7 +163,17 @@ internal class XunitEventListener : EventListener
 
                     switch (testState?.Result)
                     {
+                        case TestResult.Passed:
+                            break;
+
                         case TestResult.Failed:
+
+                            // TODO: Handle `TestTimeoutException` exception type. (It should be mapped to `NotRun`?)
+                            // if (testState.ExceptionTypes![0]! == "Xunit.Sdk.TestTimeoutException")
+                            // {
+                            // }
+
+                            //Set `otel.status_code` and `otel.status_description`
                             var errorMessage = ExtractErrorMessage(testState);
                             activity.SetStatus(ActivityStatusCode.Error, description: errorMessage);
 
@@ -179,8 +189,16 @@ internal class XunitEventListener : EventListener
                                 }));
                             }
                             break;
+
+                        case TestResult.Skipped:
+                            // TODO: Record `reason` property. (Currently not exposed by xUnit.net)
+                            break; // Dynamic skip with Assert.Skip/Assert.
+
+                        case TestResult.NotRun:
+                            break; // TODO:
+
                         default:
-                            break;
+                            throw new UnreachableException($"Unexpected TestResult: {testState?.Result}");
                     }
 
                     return;
@@ -189,12 +207,16 @@ internal class XunitEventListener : EventListener
                 {
                     // TODO: Need to handle Skipped/NotRun result (Currently it's not set on TestCaseStop event and Test event is not raised)
                     var context = TestContext.Current;
-                    var testState = context.TestState;
+                    var testCaseState = context.TestCaseStatus;
 
-                    //if (testState?.Result == TestResult.Skipped)
-                    //{
-                    //      activity.AddEvent(new ActivityEvent("Skipped") { });
-                    //}
+                    ////switch (testCaseState.)
+                    ////{
+                    ////    case TestResult.Failed:
+                    ////        break;
+                    ////    default:
+                    ////        break;
+                    ////}
+
                     return;
                 }
 
